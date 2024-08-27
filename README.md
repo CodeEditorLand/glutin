@@ -21,7 +21,7 @@ cd glutin
 cargo run --example window
 ```
 
-### Usage
+### 🛠️ Usage
 
 Glutin is an OpenGL context creation library, and doesn't directly provide
 OpenGL bindings for you.
