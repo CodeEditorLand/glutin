@@ -1,2 +1,5 @@
 [workspace]
-members = ["glutin", "glutin_examples"]
+members = [
+    "glutin",
+    "glutin_examples",
+]
