@@ -10,23 +10,19 @@
 
 mod window;
 
-pub use window::GlWindow;
-
 use std::error::Error;
 
+// #[cfg(x11_platform)]
+// use glutin::platform::x11::X11GlConfigExt;
+use glutin::prelude::*;
 use glutin::{
 	config::{Config, ConfigTemplateBuilder},
 	display::{Display, DisplayApiPreference},
 };
-// #[cfg(x11_platform)]
-// use glutin::platform::x11::X11GlConfigExt;
-use glutin::prelude::*;
-
-use raw_window_handle::{HasRawDisplayHandle, RawWindowHandle};
-
 #[cfg(wgl_backend)]
 use raw_window_handle::HasRawWindowHandle;
-
+use raw_window_handle::{HasRawDisplayHandle, RawWindowHandle};
+pub use window::GlWindow;
 use winit::{
 	error::OsError,
 	event_loop::EventLoopWindowTarget,
@@ -38,7 +34,12 @@ use winit::{
 // #[cfg(x11_platform)]
 // use winit::platform::x11::WindowBuilderExtX11;
 
-#[cfg(all(not(egl_backend), not(glx_backend), not(wgl_backend), not(cgl_backend)))]
+#[cfg(all(
+	not(egl_backend),
+	not(glx_backend),
+	not(wgl_backend),
+	not(cgl_backend)
+))]
 compile_error!("Please select at least one api backend");
 
 /// The helper to perform [`Display`] creation and OpenGL platform
@@ -54,18 +55,16 @@ compile_error!("Please select at least one api backend");
 /// [`Display`]: glutin::display::Display
 #[derive(Default, Debug, Clone)]
 pub struct DisplayBuilder {
-	preference: ApiPreference,
-	window_builder: Option<WindowBuilder>,
+	preference:ApiPreference,
+	window_builder:Option<WindowBuilder>,
 }
 
 impl DisplayBuilder {
 	/// Create new display builder.
-	pub fn new() -> Self {
-		Default::default()
-	}
+	pub fn new() -> Self { Default::default() }
 
 	/// The preference in picking the configuration.
-	pub fn with_preference(mut self, preference: ApiPreference) -> Self {
+	pub fn with_preference(mut self, preference:ApiPreference) -> Self {
 		self.preference = preference;
 		self
 	}
@@ -73,7 +72,10 @@ impl DisplayBuilder {
 	/// The window builder to use when building a window.
 	///
 	/// By default no window is created.
-	pub fn with_window_builder(mut self, window_builder: Option<WindowBuilder>) -> Self {
+	pub fn with_window_builder(
+		mut self,
+		window_builder:Option<WindowBuilder>,
+	) -> Self {
 		self.window_builder = window_builder;
 		self
 	}
@@ -93,13 +95,12 @@ impl DisplayBuilder {
 	/// otherwise only builtin functions like `glClear` will be available.
 	pub fn build<T, Picker>(
 		mut self,
-		window_target: &EventLoopWindowTarget<T>,
-		template_builder: ConfigTemplateBuilder,
-		config_picker: Picker,
+		window_target:&EventLoopWindowTarget<T>,
+		template_builder:ConfigTemplateBuilder,
+		config_picker:Picker,
 	) -> Result<(Option<Window>, Config), Box<dyn Error>>
 	where
-		Picker: FnOnce(Box<dyn Iterator<Item = Config> + '_>) -> Config,
-	{
+		Picker: FnOnce(Box<dyn Iterator<Item = Config> + '_>) -> Config, {
 		// XXX with WGL backend window should be created first.
 		#[cfg(wgl_backend)]
 		let window = if let Some(wb) = self.window_builder.take() {
@@ -109,14 +110,16 @@ impl DisplayBuilder {
 		};
 
 		#[cfg(wgl_backend)]
-		let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
+		let raw_window_handle =
+			window.as_ref().map(|window| window.raw_window_handle());
 		#[cfg(not(wgl_backend))]
 		let raw_window_handle = None;
 
-		let gl_display = create_display(window_target, self.preference, raw_window_handle)?;
+		let gl_display =
+			create_display(window_target, self.preference, raw_window_handle)?;
 
-		// XXX the native window must be passed to config picker when WGL is used
-		// otherwise very limited OpenGL features will be supported.
+		// XXX the native window must be passed to config picker when WGL is
+		// used otherwise very limited OpenGL features will be supported.
 		#[cfg(wgl_backend)]
 		let template_builder = if let Some(raw_window_handle) = raw_window_handle {
 			template_builder.compatible_with_native_window(raw_window_handle)
@@ -143,15 +146,16 @@ impl DisplayBuilder {
 }
 
 fn create_display<T>(
-	window_target: &EventLoopWindowTarget<T>,
-	_api_preference: ApiPreference,
-	_raw_window_handle: Option<RawWindowHandle>,
+	window_target:&EventLoopWindowTarget<T>,
+	_api_preference:ApiPreference,
+	_raw_window_handle:Option<RawWindowHandle>,
 ) -> Result<Display, Box<dyn Error>> {
 	#[cfg(egl_backend)]
 	let _preference = DisplayApiPreference::Egl;
 
 	// #[cfg(glx_backend)]
-	// let _preference = DisplayApiPreference::Glx(Box::new(register_xlib_error_hook));
+	// let _preference =
+	// DisplayApiPreference::Glx(Box::new(register_xlib_error_hook));
 
 	#[cfg(cgl_backend)]
 	let _preference = DisplayApiPreference::Cgl;
@@ -171,11 +175,17 @@ fn create_display<T>(
 
 	#[cfg(all(wgl_backend, egl_backend))]
 	let _preference = match _api_preference {
-		ApiPreference::PreferEgl => DisplayApiPreference::EglThenWgl(_raw_window_handle),
-		ApiPreference::FallbackEgl => DisplayApiPreference::WglThenEgl(_raw_window_handle),
+		ApiPreference::PreferEgl => {
+			DisplayApiPreference::EglThenWgl(_raw_window_handle)
+		},
+		ApiPreference::FallbackEgl => {
+			DisplayApiPreference::WglThenEgl(_raw_window_handle)
+		},
 	};
 
-	unsafe { Ok(Display::new(window_target.raw_display_handle(), _preference)?) }
+	unsafe {
+		Ok(Display::new(window_target.raw_display_handle(), _preference)?)
+	}
 }
 
 /// Finalize [`Window`] creation by applying the options from the [`Config`], be
@@ -185,9 +195,9 @@ fn create_display<T>(
 /// [`Window`]: winit::window::Window
 /// [`Config`]: glutin::config::Config
 pub fn finalize_window<T>(
-	window_target: &EventLoopWindowTarget<T>,
-	mut builder: WindowBuilder,
-	gl_config: &Config,
+	window_target:&EventLoopWindowTarget<T>,
+	mut builder:WindowBuilder,
+	gl_config:&Config,
 ) -> Result<Window, OsError> {
 	// Disable transparency if the end config doesn't support it.
 	if gl_config.supports_transparency() == Some(false) {

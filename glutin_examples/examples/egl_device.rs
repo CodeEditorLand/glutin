@@ -15,10 +15,12 @@ mod example {
 	};
 	use glutin_examples::{gl, Renderer};
 
-	const IMG_PATH: &str = concat!(env!("OUT_DIR"), "/egl_device.png");
+	const IMG_PATH:&str = concat!(env!("OUT_DIR"), "/egl_device.png");
 
 	pub fn run() {
-		let devices = Device::query_devices().expect("Failed to query devices").collect::<Vec<_>>();
+		let devices = Device::query_devices()
+			.expect("Failed to query devices")
+			.collect::<Vec<_>>();
 
 		for (index, device) in devices.iter().enumerate() {
 			println!(
@@ -32,49 +34,51 @@ mod example {
 		let device = devices.first().expect("No available devices");
 
 		// Create a display using the device.
-		let display =
-			unsafe { Display::with_device(device, None) }.expect("Failed to create display");
+		let display = unsafe { Display::with_device(device, None) }
+			.expect("Failed to create display");
 
 		let template = config_template();
 		let config = unsafe { display.find_configs(template) }
 			.unwrap()
-			.reduce(
-				|config, acc| {
-					if config.num_samples() > acc.num_samples() {
-						config
-					} else {
-						acc
-					}
-				},
-			)
+			.reduce(|config, acc| {
+				if config.num_samples() > acc.num_samples() {
+					config
+				} else {
+					acc
+				}
+			})
 			.expect("No available configs");
 
 		println!("Picked a config with {} samples", config.num_samples());
 
 		// Context creation.
 		//
-		// In particular, since we are doing offscreen rendering we have no raw window
-		// handle to provide.
+		// In particular, since we are doing offscreen rendering we have no raw
+		// window handle to provide.
 		let context_attributes = ContextAttributesBuilder::new().build(None);
 
-		// Since glutin by default tries to create OpenGL core context, which may not be
-		// present we should try gles.
-		let fallback_context_attributes =
-			ContextAttributesBuilder::new().with_context_api(ContextApi::Gles(None)).build(None);
+		// Since glutin by default tries to create OpenGL core context, which
+		// may not be present we should try gles.
+		let fallback_context_attributes = ContextAttributesBuilder::new()
+			.with_context_api(ContextApi::Gles(None))
+			.build(None);
 
 		let not_current = unsafe {
-			display.create_context(&config, &context_attributes).unwrap_or_else(|_| {
-				display
-					.create_context(&config, &fallback_context_attributes)
-					.expect("failed to create context")
-			})
+			display.create_context(&config, &context_attributes).unwrap_or_else(
+				|_| {
+					display
+						.create_context(&config, &fallback_context_attributes)
+						.expect("failed to create context")
+				},
+			)
 		};
 
 		// Make the context current for rendering
 		let _context = not_current.make_current_surfaceless().unwrap();
 		let renderer = Renderer::new(&display);
 
-		// Create a framebuffer for offscreen rendering since we do not have a window.
+		// Create a framebuffer for offscreen rendering since we do not have a
+		// window.
 		let mut framebuffer = 0;
 		let mut renderbuffer = 0;
 		unsafe {
@@ -96,7 +100,8 @@ mod example {
 
 		let mut buffer = Vec::<u8>::with_capacity(1280 * 720 * 4);
 		unsafe {
-			// Wait for the previous commands to finish before reading from the framebuffer.
+			// Wait for the previous commands to finish before reading from the
+			// framebuffer.
 			renderer.Finish();
 			// Download the framebuffer contents to the buffer.
 			renderer.ReadPixels(
@@ -112,7 +117,8 @@ mod example {
 		}
 
 		let path = Path::new(IMG_PATH);
-		let file = OpenOptions::new().write(true).create(true).open(path).unwrap();
+		let file =
+			OpenOptions::new().write(true).create(true).open(path).unwrap();
 
 		let mut encoder = png::Encoder::new(file, 1280, 720);
 		encoder.set_depth(png::BitDepth::Eight);
