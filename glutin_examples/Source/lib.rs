@@ -50,8 +50,7 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 		.with_alpha_size(8)
 		.with_transparency(cfg!(cgl_backend));
 
-	let display_builder =
-		DisplayBuilder::new().with_window_builder(window_builder);
+	let display_builder = DisplayBuilder::new().with_window_builder(window_builder);
 
 	let (mut window, gl_config) = display_builder
 		.build(&event_loop, template, |configs| {
@@ -59,13 +58,10 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 			// triangle will be smooth.
 			configs
 				.reduce(|accum, config| {
-					let transparency_check =
-						config.supports_transparency().unwrap_or(false)
-							& !accum.supports_transparency().unwrap_or(false);
+					let transparency_check = config.supports_transparency().unwrap_or(false)
+						& !accum.supports_transparency().unwrap_or(false);
 
-					if transparency_check
-						|| config.num_samples() > accum.num_samples()
-					{
+					if transparency_check || config.num_samples() > accum.num_samples() {
 						config
 					} else {
 						accum
@@ -77,8 +73,7 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 
 	println!("Picked a config with {} samples", gl_config.num_samples());
 
-	let raw_window_handle =
-		window.as_ref().map(|window| window.raw_window_handle());
+	let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
 
 	// XXX The display could be obtained from the any object created by it, so
 	// we can query it from the config.
@@ -87,8 +82,7 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 	// The context creation part. It can be created before surface and that's
 	// how it's expected in multithreaded + multiwindow operation mode, since
 	// you can send NotCurrentContext, but not Surface.
-	let context_attributes =
-		ContextAttributesBuilder::new().build(raw_window_handle);
+	let context_attributes = ContextAttributesBuilder::new().build(raw_window_handle);
 
 	// Since glutin by default tries to create OpenGL core context, which may
 	// not be present we should try gles.
@@ -103,20 +97,15 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 		.build(raw_window_handle);
 
 	let mut not_current_gl_context = Some(unsafe {
-		gl_display
-			.create_context(&gl_config, &context_attributes)
-			.unwrap_or_else(|_| {
-				gl_display
-					.create_context(&gl_config, &fallback_context_attributes)
-					.unwrap_or_else(|_| {
-						gl_display
-							.create_context(
-								&gl_config,
-								&legacy_context_attributes,
-							)
-							.expect("failed to create context")
-					})
-			})
+		gl_display.create_context(&gl_config, &context_attributes).unwrap_or_else(|_| {
+			gl_display
+				.create_context(&gl_config, &fallback_context_attributes)
+				.unwrap_or_else(|_| {
+					gl_display
+						.create_context(&gl_config, &legacy_context_attributes)
+						.expect("failed to create context")
+				})
+		})
 	});
 
 	let mut state = None;
@@ -124,36 +113,23 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 	event_loop.run(move |event, window_target, control_flow| {
 		*control_flow = ControlFlow::Wait;
 		match event {
-			Event::Resumed
-			| winit::event::Event::NewEvents(winit::event::StartCause::Init) => {
+			Event::Resumed | winit::event::Event::NewEvents(winit::event::StartCause::Init) => {
 				#[cfg(android_platform)]
 				println!("Android window available");
 
 				let window = window.take().unwrap_or_else(|| {
-					let window_builder =
-						WindowBuilder::new().with_transparent(true);
-					glutin_tao::finalize_window(
-						window_target,
-						window_builder,
-						&gl_config,
-					)
-					.unwrap()
+					let window_builder = WindowBuilder::new().with_transparent(true);
+					glutin_tao::finalize_window(window_target, window_builder, &gl_config).unwrap()
 				});
 
 				let attrs = window.build_surface_attributes(<_>::default());
 				let gl_surface = unsafe {
-					gl_config
-						.display()
-						.create_window_surface(&gl_config, &attrs)
-						.unwrap()
+					gl_config.display().create_window_surface(&gl_config, &attrs).unwrap()
 				};
 
 				// Make it current.
-				let gl_context = not_current_gl_context
-					.take()
-					.unwrap()
-					.make_current(&gl_surface)
-					.unwrap();
+				let gl_context =
+					not_current_gl_context.take().unwrap().make_current(&gl_surface).unwrap();
 
 				// The context needs to be current for the Renderer to set up
 				// shaders and buffers. It also performs function loading,
@@ -161,16 +137,13 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 				renderer.get_or_insert_with(|| Renderer::new(&gl_display));
 
 				// Try setting vsync.
-				if let Err(res) = gl_surface.set_swap_interval(
-					&gl_context,
-					SwapInterval::Wait(NonZeroU32::new(1).unwrap()),
-				) {
+				if let Err(res) = gl_surface
+					.set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
+				{
 					eprintln!("Error setting vsync: {res:?}");
 				}
 
-				assert!(
-					state.replace((gl_context, gl_surface, window)).is_none()
-				);
+				assert!(state.replace((gl_context, gl_surface, window)).is_none());
 			},
 			Event::Suspended => {
 				// This event is only raised on Android, where the backing
@@ -204,10 +177,7 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 									NonZeroU32::new(size.height).unwrap(),
 								);
 								let renderer = renderer.as_ref().unwrap();
-								renderer.resize(
-									size.width as i32,
-									size.height as i32,
-								);
+								renderer.resize(size.width as i32, size.height as i32);
 							}
 						}
 					},
@@ -253,19 +223,12 @@ impl Renderer {
 				println!("OpenGL Version {}", version.to_string_lossy());
 			}
 
-			if let Some(shaders_version) =
-				get_gl_string(&gl, gl::SHADING_LANGUAGE_VERSION)
-			{
-				println!(
-					"Shaders version on {}",
-					shaders_version.to_string_lossy()
-				);
+			if let Some(shaders_version) = get_gl_string(&gl, gl::SHADING_LANGUAGE_VERSION) {
+				println!("Shaders version on {}", shaders_version.to_string_lossy());
 			}
 
-			let vertex_shader =
-				create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
-			let fragment_shader =
-				create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
+			let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
+			let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
 
 			let program = gl.CreateProgram();
 
@@ -288,16 +251,13 @@ impl Renderer {
 			gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
 			gl.BufferData(
 				gl::ARRAY_BUFFER,
-				(VERTEX_DATA.len() * std::mem::size_of::<f32>())
-					as gl::types::GLsizeiptr,
+				(VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
 				VERTEX_DATA.as_ptr() as *const _,
 				gl::STATIC_DRAW,
 			);
 
-			let pos_attrib = gl
-				.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-			let color_attrib =
-				gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
+			let pos_attrib = gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
+			let color_attrib = gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
 			gl.VertexAttribPointer(
 				pos_attrib as gl::types::GLuint,
 				2,
@@ -357,26 +317,14 @@ impl Drop for Renderer {
 	}
 }
 
-unsafe fn create_shader(
-	gl:&gl::Gl,
-	shader:gl::types::GLenum,
-	source:&[u8],
-) -> gl::types::GLuint {
+unsafe fn create_shader(gl:&gl::Gl, shader:gl::types::GLenum, source:&[u8]) -> gl::types::GLuint {
 	let shader = gl.CreateShader(shader);
-	gl.ShaderSource(
-		shader,
-		1,
-		[source.as_ptr().cast()].as_ptr(),
-		std::ptr::null(),
-	);
+	gl.ShaderSource(shader, 1, [source.as_ptr().cast()].as_ptr(), std::ptr::null());
 	gl.CompileShader(shader);
 	shader
 }
 
-fn get_gl_string(
-	gl:&gl::Gl,
-	variant:gl::types::GLenum,
-) -> Option<&'static CStr> {
+fn get_gl_string(gl:&gl::Gl, variant:gl::types::GLenum) -> Option<&'static CStr> {
 	unsafe {
 		let s = gl.GetString(variant);
 		(!s.is_null()).then(|| CStr::from_ptr(s.cast()))

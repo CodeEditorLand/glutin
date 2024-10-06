@@ -34,12 +34,7 @@ use winit::{
 // #[cfg(x11_platform)]
 // use winit::platform::x11::WindowBuilderExtX11;
 
-#[cfg(all(
-	not(egl_backend),
-	not(glx_backend),
-	not(wgl_backend),
-	not(cgl_backend)
-))]
+#[cfg(all(not(egl_backend), not(glx_backend), not(wgl_backend), not(cgl_backend)))]
 compile_error!("Please select at least one api backend");
 
 /// The helper to perform [`Display`] creation and OpenGL platform
@@ -72,10 +67,7 @@ impl DisplayBuilder {
 	/// The window builder to use when building a window.
 	///
 	/// By default no window is created.
-	pub fn with_window_builder(
-		mut self,
-		window_builder:Option<WindowBuilder>,
-	) -> Self {
+	pub fn with_window_builder(mut self, window_builder:Option<WindowBuilder>) -> Self {
 		self.window_builder = window_builder;
 		self
 	}
@@ -110,13 +102,11 @@ impl DisplayBuilder {
 		};
 
 		#[cfg(wgl_backend)]
-		let raw_window_handle =
-			window.as_ref().map(|window| window.raw_window_handle());
+		let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
 		#[cfg(not(wgl_backend))]
 		let raw_window_handle = None;
 
-		let gl_display =
-			create_display(window_target, self.preference, raw_window_handle)?;
+		let gl_display = create_display(window_target, self.preference, raw_window_handle)?;
 
 		// XXX the native window must be passed to config picker when WGL is
 		// used otherwise very limited OpenGL features will be supported.
@@ -175,17 +165,11 @@ fn create_display<T>(
 
 	#[cfg(all(wgl_backend, egl_backend))]
 	let _preference = match _api_preference {
-		ApiPreference::PreferEgl => {
-			DisplayApiPreference::EglThenWgl(_raw_window_handle)
-		},
-		ApiPreference::FallbackEgl => {
-			DisplayApiPreference::WglThenEgl(_raw_window_handle)
-		},
+		ApiPreference::PreferEgl => DisplayApiPreference::EglThenWgl(_raw_window_handle),
+		ApiPreference::FallbackEgl => DisplayApiPreference::WglThenEgl(_raw_window_handle),
 	};
 
-	unsafe {
-		Ok(Display::new(window_target.raw_display_handle(), _preference)?)
-	}
+	unsafe { Ok(Display::new(window_target.raw_display_handle(), _preference)?) }
 }
 
 /// Finalize [`Window`] creation by applying the options from the [`Config`], be

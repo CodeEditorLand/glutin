@@ -18,9 +18,7 @@ mod example {
 	const IMG_PATH:&str = concat!(env!("OUT_DIR"), "/egl_device.png");
 
 	pub fn run() {
-		let devices = Device::query_devices()
-			.expect("Failed to query devices")
-			.collect::<Vec<_>>();
+		let devices = Device::query_devices().expect("Failed to query devices").collect::<Vec<_>>();
 
 		for (index, device) in devices.iter().enumerate() {
 			println!(
@@ -34,19 +32,17 @@ mod example {
 		let device = devices.first().expect("No available devices");
 
 		// Create a display using the device.
-		let display = unsafe { Display::with_device(device, None) }
-			.expect("Failed to create display");
+		let display =
+			unsafe { Display::with_device(device, None) }.expect("Failed to create display");
 
 		let template = config_template();
 		let config = unsafe { display.find_configs(template) }
 			.unwrap()
-			.reduce(|config, acc| {
-				if config.num_samples() > acc.num_samples() {
-					config
-				} else {
-					acc
-				}
-			})
+			.reduce(
+				|config, acc| {
+					if config.num_samples() > acc.num_samples() { config } else { acc }
+				},
+			)
 			.expect("No available configs");
 
 		println!("Picked a config with {} samples", config.num_samples());
@@ -64,13 +60,11 @@ mod example {
 			.build(None);
 
 		let not_current = unsafe {
-			display.create_context(&config, &context_attributes).unwrap_or_else(
-				|_| {
-					display
-						.create_context(&config, &fallback_context_attributes)
-						.expect("failed to create context")
-				},
-			)
+			display.create_context(&config, &context_attributes).unwrap_or_else(|_| {
+				display
+					.create_context(&config, &fallback_context_attributes)
+					.expect("failed to create context")
+			})
 		};
 
 		// Make the context current for rendering
@@ -117,8 +111,7 @@ mod example {
 		}
 
 		let path = Path::new(IMG_PATH);
-		let file =
-			OpenOptions::new().write(true).create(true).open(path).unwrap();
+		let file = OpenOptions::new().write(true).create(true).open(path).unwrap();
 
 		let mut encoder = png::Encoder::new(file, 1280, 720);
 		encoder.set_depth(png::BitDepth::Eight);
