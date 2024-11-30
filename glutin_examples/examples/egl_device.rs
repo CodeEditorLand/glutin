@@ -13,6 +13,7 @@ mod example {
 		context::{ContextApi, ContextAttributesBuilder},
 		prelude::*,
 	};
+
 	use glutin_examples::{gl, Renderer};
 
 	const IMG_PATH:&str = concat!(env!("OUT_DIR"), "/egl_device.png");
@@ -36,6 +37,7 @@ mod example {
 			unsafe { Display::with_device(device, None) }.expect("Failed to create display");
 
 		let template = config_template();
+
 		let config = unsafe { display.find_configs(template) }
 			.unwrap()
 			.reduce(
@@ -69,17 +71,25 @@ mod example {
 
 		// Make the context current for rendering
 		let _context = not_current.make_current_surfaceless().unwrap();
+
 		let renderer = Renderer::new(&display);
 
 		// Create a framebuffer for offscreen rendering since we do not have a window.
 		let mut framebuffer = 0;
+
 		let mut renderbuffer = 0;
+
 		unsafe {
 			renderer.GenFramebuffers(1, &mut framebuffer);
+
 			renderer.GenRenderbuffers(1, &mut renderbuffer);
+
 			renderer.BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
+
 			renderer.BindRenderbuffer(gl::RENDERBUFFER, renderbuffer);
+
 			renderer.RenderbufferStorage(gl::RENDERBUFFER, gl::RGBA, 1280, 720);
+
 			renderer.FramebufferRenderbuffer(
 				gl::FRAMEBUFFER,
 				gl::COLOR_ATTACHMENT0,
@@ -89,9 +99,11 @@ mod example {
 		}
 
 		renderer.resize(1280, 720);
+
 		renderer.draw();
 
 		let mut buffer = Vec::<u8>::with_capacity(1280 * 720 * 4);
+
 		unsafe {
 			// Wait for the previous commands to finish before reading from the framebuffer.
 			renderer.Finish();
@@ -105,26 +117,36 @@ mod example {
 				gl::UNSIGNED_BYTE,
 				buffer.as_mut_ptr() as *mut _,
 			);
+
 			buffer.set_len(1280 * 720 * 4);
 		}
 
 		let path = Path::new(IMG_PATH);
+
 		let file = OpenOptions::new().write(true).create(true).open(path).unwrap();
 
 		let mut encoder = png::Encoder::new(file, 1280, 720);
+
 		encoder.set_depth(png::BitDepth::Eight);
+
 		encoder.set_color(png::ColorType::Rgba);
+
 		let mut png_writer = encoder.write_header().unwrap();
 
 		png_writer.write_image_data(&buffer[..]).unwrap();
+
 		png_writer.finish().unwrap();
+
 		println!("Output rendered to: {}", path.display());
 
 		unsafe {
 			// Unbind the framebuffer and renderbuffer before deleting.
 			renderer.BindFramebuffer(gl::DRAW_FRAMEBUFFER, 0);
+
 			renderer.BindRenderbuffer(gl::RENDERBUFFER, 0);
+
 			renderer.DeleteFramebuffers(1, &framebuffer);
+
 			renderer.DeleteRenderbuffers(1, &renderbuffer);
 		}
 	}

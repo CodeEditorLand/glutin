@@ -61,6 +61,7 @@ impl DisplayBuilder {
 	/// The preference in picking the configuration.
 	pub fn with_preference(mut self, preference:ApiPreference) -> Self {
 		self.preference = preference;
+
 		self
 	}
 
@@ -69,6 +70,7 @@ impl DisplayBuilder {
 	/// By default no window is created.
 	pub fn with_window_builder(mut self, window_builder:Option<WindowBuilder>) -> Self {
 		self.window_builder = window_builder;
+
 		self
 	}
 
@@ -121,6 +123,7 @@ impl DisplayBuilder {
 
 		let gl_config = unsafe {
 			let configs = gl_display.find_configs(template)?;
+
 			config_picker(configs)
 		};
 

@@ -60,6 +60,7 @@ impl GlWindow for Window {
 		builder:SurfaceAttributesBuilder<WindowSurface>,
 	) -> SurfaceAttributes<WindowSurface> {
 		let (w, h) = self.inner_size().non_zero().expect("invalid zero inner size");
+
 		builder.build(self.raw_window_handle(), w, h)
 	}
 
@@ -82,7 +83,9 @@ trait NonZeroU32PhysicalSize {
 impl NonZeroU32PhysicalSize for winit::dpi::PhysicalSize<u32> {
 	fn non_zero(self) -> Option<(NonZeroU32, NonZeroU32)> {
 		let w = NonZeroU32::new(self.width)?;
+
 		let h = NonZeroU32::new(self.height)?;
+
 		Some((w, h))
 	}
 }

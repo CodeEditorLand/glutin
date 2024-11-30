@@ -109,9 +109,12 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 	});
 
 	let mut state = None;
+
 	let mut renderer = None;
+
 	event_loop.run(move |event, window_target, control_flow| {
 		*control_flow = ControlFlow::Wait;
+
 		match event {
 			Event::Resumed | winit::event::Event::NewEvents(winit::event::StartCause::Init) => {
 				#[cfg(android_platform)]
@@ -119,10 +122,12 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 
 				let window = window.take().unwrap_or_else(|| {
 					let window_builder = WindowBuilder::new().with_transparent(true);
+
 					glutin_tao::finalize_window(window_target, window_builder, &gl_config).unwrap()
 				});
 
 				let attrs = window.build_surface_attributes(<_>::default());
+
 				let gl_surface = unsafe {
 					gl_config.display().create_window_surface(&gl_config, &attrs).unwrap()
 				};
@@ -153,6 +158,7 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 				// Destroy the GL Surface and un-current the GL Context before ndk-glue releases
 				// the window back to the system.
 				let (gl_context, ..) = state.take().unwrap();
+
 				assert!(
 					not_current_gl_context
 						.replace(gl_context.make_not_current().unwrap())
@@ -173,7 +179,9 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 									NonZeroU32::new(size.width).unwrap(),
 									NonZeroU32::new(size.height).unwrap(),
 								);
+
 								let renderer = renderer.as_ref().unwrap();
+
 								renderer.resize(size.width as i32, size.height as i32);
 							}
 						}
@@ -187,7 +195,9 @@ pub fn main(event_loop:winit::event_loop::EventLoop<()>) {
 			Event::RedrawEventsCleared => {
 				if let Some((gl_context, gl_surface, window)) = &state {
 					let renderer = renderer.as_ref().unwrap();
+
 					renderer.draw();
+
 					window.request_redraw();
 
 					gl_surface.swap_buffers(gl_context).unwrap();
@@ -210,12 +220,14 @@ impl Renderer {
 		unsafe {
 			let gl = gl::Gl::load_with(|symbol| {
 				let symbol = CString::new(symbol).unwrap();
+
 				gl_display.get_proc_address(symbol.as_c_str()).cast()
 			});
 
 			if let Some(renderer) = get_gl_string(&gl, gl::RENDERER) {
 				println!("Running on {}", renderer.to_string_lossy());
 			}
+
 			if let Some(version) = get_gl_string(&gl, gl::VERSION) {
 				println!("OpenGL Version {}", version.to_string_lossy());
 			}
@@ -225,11 +237,13 @@ impl Renderer {
 			}
 
 			let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
+
 			let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
 
 			let program = gl.CreateProgram();
 
 			gl.AttachShader(program, vertex_shader);
+
 			gl.AttachShader(program, fragment_shader);
 
 			gl.LinkProgram(program);
@@ -237,15 +251,21 @@ impl Renderer {
 			gl.UseProgram(program);
 
 			gl.DeleteShader(vertex_shader);
+
 			gl.DeleteShader(fragment_shader);
 
 			let mut vao = std::mem::zeroed();
+
 			gl.GenVertexArrays(1, &mut vao);
+
 			gl.BindVertexArray(vao);
 
 			let mut vbo = std::mem::zeroed();
+
 			gl.GenBuffers(1, &mut vbo);
+
 			gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
+
 			gl.BufferData(
 				gl::ARRAY_BUFFER,
 				(VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
@@ -254,7 +274,9 @@ impl Renderer {
 			);
 
 			let pos_attrib = gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
+
 			let color_attrib = gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
+
 			gl.VertexAttribPointer(
 				pos_attrib as gl::types::GLuint,
 				2,
@@ -263,6 +285,7 @@ impl Renderer {
 				5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
 				std::ptr::null(),
 			);
+
 			gl.VertexAttribPointer(
 				color_attrib as gl::types::GLuint,
 				3,
@@ -271,7 +294,9 @@ impl Renderer {
 				5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
 				(2 * std::mem::size_of::<f32>()) as *const () as *const _,
 			);
+
 			gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
+
 			gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
 
 			Self { program, vao, vbo, gl }
@@ -283,10 +308,13 @@ impl Renderer {
 			self.gl.UseProgram(self.program);
 
 			self.gl.BindVertexArray(self.vao);
+
 			self.gl.BindBuffer(gl::ARRAY_BUFFER, self.vbo);
 
 			self.gl.ClearColor(0.1, 0.1, 0.1, 0.9);
+
 			self.gl.Clear(gl::COLOR_BUFFER_BIT);
+
 			self.gl.DrawArrays(gl::TRIANGLES, 0, 3);
 		}
 	}
@@ -308,7 +336,9 @@ impl Drop for Renderer {
 	fn drop(&mut self) {
 		unsafe {
 			self.gl.DeleteProgram(self.program);
+
 			self.gl.DeleteBuffers(1, &self.vbo);
+
 			self.gl.DeleteVertexArrays(1, &self.vao);
 		}
 	}
@@ -316,8 +346,11 @@ impl Drop for Renderer {
 
 unsafe fn create_shader(gl:&gl::Gl, shader:gl::types::GLenum, source:&[u8]) -> gl::types::GLuint {
 	let shader = gl.CreateShader(shader);
+
 	gl.ShaderSource(shader, 1, [source.as_ptr().cast()].as_ptr(), std::ptr::null());
+
 	gl.CompileShader(shader);
+
 	shader
 }
 
@@ -346,6 +379,7 @@ varying vec3 v_color;
 
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
+
     v_color = color;
 }
 \0";
