@@ -25,8 +25,8 @@ raw-window-handle = "0.5.0"
 png = { version = "0.17.6", optional = true }
 
 [build-dependencies]
-gl_generator = "0.14"
-cfg_aliases = "0.1.1"
+gl_generator = { version = "0.14" }
+cfg_aliases = { version = "0.1.1" }
 
 [[example]]
 name = "egl_device"
