@@ -13,8 +13,7 @@ mod example {
 		context::{ContextApi, ContextAttributesBuilder},
 		prelude::*,
 	};
-
-	use glutin_examples::{gl, Renderer};
+	use glutin_examples::{Renderer, gl};
 
 	const IMG_PATH:&str = concat!(env!("OUT_DIR"), "/egl_device.png");
 
